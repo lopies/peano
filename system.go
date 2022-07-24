@@ -1,5 +1,7 @@
 package peano
 
+import "time"
+
 type Initer interface {
 	Initer(Contexts)
 }
@@ -56,26 +58,28 @@ func (s *systems) Init(contexts Contexts) {
 }
 
 func (s *systems) Execute() {
-	//TODO 监听客户端事件，做出动作处理
-	for _, v := range s.executers {
-		v.Executer()
-	}
-	for i, v := range s.reactives {
-		if s.collectors[i] != nil {
-			var buffer []*Entity
-			entities := s.collectors[i].Entities()
-			if len(entities) != 0 {
-				for _, e := range entities {
-					if v.Filter(e) {
-						buffer = append(buffer, e)
+	for {
+		for _, v := range s.executers {
+			v.Executer()
+		}
+		for i, v := range s.reactives {
+			if s.collectors[i] != nil {
+				var buffer []*Entity
+				entities := s.collectors[i].Entities()
+				if len(entities) != 0 {
+					for _, e := range entities {
+						if v.Filter(e) {
+							buffer = append(buffer, e)
+						}
 					}
-				}
-				s.collectors[i].Clear()
-				if len(buffer) != 0 {
-					v.Executer(buffer)
+					s.collectors[i].Clear()
+					if len(buffer) != 0 {
+						v.Executer(buffer)
+					}
 				}
 			}
 		}
+		time.Sleep(time.Millisecond * 50)
 	}
 }
 

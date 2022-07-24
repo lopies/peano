@@ -9,32 +9,19 @@ func main() {
 	contexts := peano.CreateContexts(5)
 	game := contexts.Game()
 
+	players := make([]*peano.Entity, 0, 10)
+	for i := 0; i < 10; i++ {
+		player := game.CreateEntity()
+		player.AddPosition(0, 0)
+		player.AddDirection(1000, 1000)
+		players = append(players, player)
+	}
+
 	// System registration
 	systems := peano.CreateSystemPool()
-	systems.Add(&Translate{})
-	systems.Add(&ReactiveTranslate{})
-
-	// Create entity
-	player := game.CreateEntity()
-
-	// Add component
-	player.AddPosition(10, 30)
-	player.AddDirection(0, 0)
-	player.AddSpeed(5)
-
-	// Remove component
-	player.RemoveSpeed()
-
-	// Replace component
-	player.ReplacePosition(30, 10)
-	fmt.Printf("X = %f,Y = %f", player.GetPosition().X, player.GetPosition().Y)
-
-	// On or Off component
-	player.OffDirection()
-	player.OnDirection()
-
-	// Destroy entity
-	//player.Destroy()
+	systems.Add(&InputSystem{players: players})
+	systems.Add(&DirectionReactiveTranslate{})
+	systems.Add(&PositionReactiveTranslate{})
 
 	// GameLoop
 	systems.Init(contexts)
@@ -43,38 +30,58 @@ func main() {
 	systems.Exit(contexts)
 }
 
-type Translate struct {
-	group peano.Group
+type InputSystem struct {
+	players []*peano.Entity
 }
 
-func (s *Translate) Initer(contexts peano.Contexts) {
-	game := contexts.Game()
-	s.group = game.Group(peano.NewMatcher().AllOf(peano.Position))
+func (s *InputSystem) Initer(contexts peano.Contexts) {
+	fmt.Println("input system init")
 }
 
-func (s *Translate) Executer() {
-	for _, e := range s.group.GetEntities() {
-		pos := e.GetPosition()
-		e.ReplacePosition(pos.X+10, pos.X+10)
+func (s *InputSystem) Executer() {
+	for _, player := range s.players {
+		pos := player.GetPosition()
+		player.ReplacePosition(pos.X+1, pos.X+1)
+
+		direction := player.GetDirection()
+		player.ReplaceDirection(direction.Y+1, direction.X+1)
 	}
-	fmt.Println("执行Tanslate的Executer")
 }
 
-type ReactiveTranslate struct {
+type PositionReactiveTranslate struct {
 }
 
-func (s *ReactiveTranslate) Trigger(contexts peano.Contexts) peano.Collector {
+func (s *PositionReactiveTranslate) Trigger(contexts peano.Contexts) peano.Collector {
 	game := contexts.Game()
 	return game.Collector(peano.NewMatcher().AllOf(peano.Position)).OnUpdate().OnAdd()
 }
 
-func (s *ReactiveTranslate) Filter(entity *peano.Entity) bool {
+func (s *PositionReactiveTranslate) Filter(entity *peano.Entity) bool {
 	return entity.Has(peano.Position)
 }
 
-func (s *ReactiveTranslate) Executer(entities []*peano.Entity) {
+func (s *PositionReactiveTranslate) Executer(entities []*peano.Entity) {
 	for _, e := range entities {
 		pos := e.GetPosition()
-		e.ReplacePosition(pos.X+10, pos.X+10)
+		fmt.Printf("PositionReactiveTranslate listen player pos change ,ID=%d,X = %f,Y=%f\n", e.ID(), pos.X, pos.Y)
+	}
+}
+
+type DirectionReactiveTranslate struct {
+}
+
+func (s *DirectionReactiveTranslate) Trigger(contexts peano.Contexts) peano.Collector {
+	game := contexts.Game()
+	return game.Collector(peano.NewMatcher().AllOf(peano.Direction)).OnUpdate().OnAdd()
+}
+
+func (s *DirectionReactiveTranslate) Filter(entity *peano.Entity) bool {
+	return entity.Has(peano.Direction)
+}
+
+func (s *DirectionReactiveTranslate) Executer(entities []*peano.Entity) {
+	for _, e := range entities {
+		d := e.GetDirection()
+		fmt.Printf("DirectionReactiveTranslate listen player direction change ,ID=%d,d.x=%f,d.y=%f\n", e.ID(), d.X, d.Y)
 	}
 }

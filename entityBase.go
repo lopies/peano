@@ -1,9 +1,6 @@
 package peano
 
 type EntityBase interface {
-	/////////////////////////////////////////////////////
-	//Public:
-
 	CreateEntity() *Entity
 	Group(Matcher) Group
 	Collector(Matcher) Collector
@@ -14,8 +11,6 @@ type EntityBase interface {
 	OnEntityWillBeDestroyed(func(*Entity))
 	OnEntityDestroyed(func(*Entity))
 
-	/////////////////////////////////////////////////////
-	//Private:
 	destroyEntity(e *Entity)
 	removeComponent(e *Entity, tp int, c Component)
 }
@@ -37,10 +32,6 @@ type entityBase struct {
 	onEntityDestroyed       onEntity
 }
 
-/////////////////////////////////////////////////////
-// Constructor:
-/////////////////////////////////////////////////////
-
 func CreateEntityBase(componentTotal int) EntityBase {
 	return &entityBase{
 		componentTotal: componentTotal,
@@ -49,10 +40,6 @@ func CreateEntityBase(componentTotal int) EntityBase {
 		groups:         make(map[int]Group),
 	}
 }
-
-/////////////////////////////////////////////////////
-// Public:
-/////////////////////////////////////////////////////
 
 func (eb *entityBase) CreateEntity() *Entity {
 	var entity *Entity
@@ -119,14 +106,11 @@ func (eb *entityBase) Group(matcher Matcher) Group {
 	return g
 }
 
+//Create Collector
 func (eb *entityBase) Collector(matcher Matcher) Collector {
 	g := eb.Group(matcher)
 	return newCollector(g)
 }
-
-/////////////////////////////////////////////////////
-// Private:
-/////////////////////////////////////////////////////
 
 func (eb *entityBase) updateGroupsComponentRemoved(entity *Entity, index int, component Component) {
 	entity.componentState.Off(index, eb.componentTotal)
